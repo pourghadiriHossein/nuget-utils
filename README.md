@@ -1,9 +1,8 @@
-# 📦 ICOT Shared NuGet Packages
+# 📦 nuget-utils (ICOT Shared Packages)
 
-این مخزن شامل کتابخانه‌های هسته مشترک پلتفرم **ICOT** بر بستر **.NET 10.0** است که به صورت بسته‌های NuGet برای استفاده در تمامی میکروسرویس‌های پلتفرم منتشر می‌شوند.
+این مخزن شامل کتابخانه‌های هسته مشترک پلتفرم **ICOT** بر بستر **.NET 10.0** است که به صورت بسته‌های NuGet برای استفاده در تمامی میکروسرویس‌های پلتفرم در GitHub Packages منتشر می‌شوند.
 
-- **آدرس مخزن:** [https://hamgit.ir/icot/icot-nuget](https://hamgit.ir/icot/icot-nuget)
-- **رجیستری پکیج‌ها (Package Registry):** در بخش `Deploy > Package Registry` پروژه در هم‌گیت در دسترس است.
+- **آدرس مخزن:** [https://github.com/pourghadiriHossein/nuget-utils](https://github.com/pourghadiriHossein/nuget-utils)
 
 ---
 
@@ -23,7 +22,7 @@
 
 ## 💻 نحوه استفاده در میکروسرویس‌ها
 
-چون مخزن عمومی (Public) است، کافیست فایل `nuget.config` را در کنار میکروسرویس خود قرار دهید:
+برای استفاده از این پکیج‌ها که روی GitHub Packages قرار دارند، باید فایل `nuget.config` را در کنار میکروسرویس خود قرار دهید (توجه کنید که گیت‌هاب برای دانلود پکیج‌ها نیازمند Token است):
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -31,8 +30,14 @@
   <packageSources>
     <clear />
     <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
-    <add key="Hamgit" value="https://hamgit.ir/api/v4/projects/icot%2Ficot-nuget/packages/nuget/index.json" />
+    <add key="GitHub" value="https://nuget.pkg.github.com/pourghadiriHossein/index.json" />
   </packageSources>
+  <packageSourceCredentials>
+    <GitHub>
+      <add key="Username" value="pourghadiriHossein" />
+      <add key="ClearTextPassword" value="YOUR_GITHUB_PERSONAL_ACCESS_TOKEN" />
+    </GitHub>
+  </packageSourceCredentials>
 </configuration>
 ```
 
@@ -45,15 +50,6 @@ dotnet add package Icot.Shared.Messaging
 
 ---
 
-## 🚀 انتشار خودکار نسخه جدید (CI/CD)
+## 🚀 انتشار خودکار نسخه جدید (GitHub Actions)
 
-این مخزن مجهز به پایپ‌لاین GitLab CI است. برای انتشار یک نسخه جدید:
-
-1. ورژن را در فایل‌های `.csproj` پروژه‌ها به‌روزرسانی کنید.
-2. کامیت کرده و یک `Tag` روی مخزن ثبت کنید (مثلاً `v1.0.1`):
-   ```bash
-   git tag v1.0.1
-   git push origin v1.0.1
-   ```
-3. پایپ‌لاین به طور خودکار بسته‌های NuGet را ساخته و در Package Registry هم‌گیت منتشر می‌کند.
-*(همچنین در برنچ `main` می‌توانید از پنل CI/CD هم‌گیت مرحله `publish_packages` را به صورت دستی Trigger کنید).*
+این مخزن مجهز به اکشن‌های گیت‌هاب (GitHub Actions) است. با هر بار **پوش کردن کد روی برنچ `main`**، پایپ‌لاین به طور خودکار نسخه‌ی جدیدی از پکیج‌ها را ساخته و در GitHub Packages منتشر می‌کند (نسخه‌بندی به طور خودکار انجام می‌شود).
