@@ -5,9 +5,10 @@ on:
     branches: [ main ]
 
 jobs:
-  build-and-publish:
+  build:
     runs-on: ubuntu-latest
     permissions:
+      id-token: write
       packages: write
       contents: read
     
@@ -19,9 +20,12 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '10.0.x'
-        source-url: https://nuget.pkg.github.com/pourghadiriHossein/index.json
-      env:
-        NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+    - name: Restore dependencies
+      run: dotnet restore Shared.Kernel/Shared.Kernel.csproj
+
+    - name: Restore dependencies for Messaging
+      run: dotnet restore Shared.Messaging/Shared.Messaging.csproj
 
     - name: Pack Shared.Kernel
       run: dotnet pack Shared.Kernel/Shared.Kernel.csproj -c Release -p:PackageVersion=1.0.${{ github.run_number }} -p:ContinuousIntegrationBuild=true -o ./artifacts
@@ -29,5 +33,5 @@ jobs:
     - name: Pack Shared.Messaging
       run: dotnet pack Shared.Messaging/Shared.Messaging.csproj -c Release -p:PackageVersion=1.0.${{ github.run_number }} -p:ContinuousIntegrationBuild=true -o ./artifacts
 
-    - name: Push packages to GitHub Packages
-      run: dotnet nuget push ./artifacts/*.nupkg --source "https://nuget.pkg.github.com/pourghadiriHossein/index.json" --skip-duplicate --api-key ${{secrets.GITHUB_TOKEN}}
+    - name: Push packages to NuGet.org
+      run: dotnet nuget push ./artifacts/*.nupkg --source "https://api.nuget.org/v3/index.json" --skip-duplicate
