@@ -34,4 +34,4 @@ jobs:
       run: dotnet pack Shared.Messaging/Shared.Messaging.csproj -c Release -p:PackageVersion=1.0.${{ github.run_number }} -p:ContinuousIntegrationBuild=true -o ./artifacts
 
     - name: Push packages to NuGet.org
-      run: dotnet nuget push ./artifacts/*.nupkg --source "https://api.nuget.org/v3/index.json" --skip-duplicate
+      run: dotnet nuget push ./artifacts/*.nupkg --source "https://api.nuget.org/v3/index.json" --skip-duplicate --api-key ${{secrets.NUGET_API_KEY}}
