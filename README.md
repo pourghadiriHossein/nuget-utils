@@ -1,6 +1,6 @@
 # 📦 nuget-utils (ICOT Shared Packages)
 
-این مخزن شامل کتابخانه‌های هسته مشترک پلتفرم **ICOT** بر بستر **.NET 10.0** است که به صورت بسته‌های NuGet برای استفاده در تمامی میکروسرویس‌های پلتفرم در GitHub Packages منتشر می‌شوند.
+این مخزن شامل کتابخانه‌های هسته مشترک پلتفرم **ICOT** بر بستر **.NET 10.0** است که به صورت بسته‌های NuGet برای استفاده در تمامی میکروسرویس‌های پلتفرم به صورت عمومی در سایت رسمی **NuGet.org** منتشر می‌شوند.
 
 - **آدرس مخزن:** [https://github.com/pourghadiriHossein/nuget-utils](https://github.com/pourghadiriHossein/nuget-utils)
 
@@ -22,34 +22,25 @@
 
 ## 💻 نحوه استفاده در میکروسرویس‌ها
 
-برای استفاده از این پکیج‌ها که روی GitHub Packages قرار دارند، باید فایل `nuget.config` را در کنار میکروسرویس خود قرار دهید (توجه کنید که گیت‌هاب برای دانلود پکیج‌ها نیازمند Token است):
-
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<configuration>
-  <packageSources>
-    <clear />
-    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
-    <add key="GitHub" value="https://nuget.pkg.github.com/pourghadiriHossein/index.json" />
-  </packageSources>
-  <packageSourceCredentials>
-    <GitHub>
-      <add key="Username" value="pourghadiriHossein" />
-      <add key="ClearTextPassword" value="YOUR_GITHUB_PERSONAL_ACCESS_TOKEN" />
-    </GitHub>
-  </packageSourceCredentials>
-</configuration>
-```
-
-سپس پکیج‌ها را به آسانی نصب کنید:
+از آنجایی که پکیج‌ها به صورت عمومی و استاندارد روی سایت رسمی `Nuget.org` قرار دارند، **هیچ نیازی به تنظیمات فایل `nuget.config` یا توکن گیت‌هاب نیست!** کافیست دستورات زیر را در پوشه پروژه خود اجرا کنید:
 
 ```bash
 dotnet add package Icot.Shared.Kernel
 dotnet add package Icot.Shared.Messaging
 ```
 
+یا اگر می‌خواهید (مثل معماری فعلی پلتفرم) پروژه‌ها همیشه به صورت خودکار آخرین نسخه را دریافت کنند، از ورژن شناور در فایل `.csproj` استفاده کنید:
+
+```xml
+<PackageReference Include="Icot.Shared.Kernel" Version="1.0.*" />
+<PackageReference Include="Icot.Shared.Messaging" Version="1.0.*" />
+```
+
 ---
 
 ## 🚀 انتشار خودکار نسخه جدید (GitHub Actions)
 
-این مخزن مجهز به اکشن‌های گیت‌هاب (GitHub Actions) است. با هر بار **پوش کردن کد روی برنچ `main`**، پایپ‌لاین به طور خودکار نسخه‌ی جدیدی از پکیج‌ها را ساخته و در GitHub Packages منتشر می‌کند (نسخه‌بندی به طور خودکار انجام می‌شود).
+این مخزن مجهز به اکشن‌های گیت‌هاب (GitHub Actions) است. با هر بار **پوش کردن کد روی برنچ `main`**، اتفاقات زیر به صورت خودکار رخ می‌دهد:
+۱. بیلدهای جدید شماره‌گذاری می‌شوند (نسخه‌بندی داینامیک).
+۲. پکیج‌های `.nupkg` ساخته می‌شوند.
+۳. گیت‌هاب با روش فوق‌امنیتی **Trusted Publishing (OIDC)** و کاملاً بدون نیاز به پسورد یا Secretهای دستی، پکیج‌های جدید را مستقیماً روی سایت Nuget.org آپلود می‌کند!
