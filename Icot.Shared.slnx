@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Shared.Kernel/Shared.Kernel.csproj" />
+  <Project Path="Shared.Messaging/Shared.Messaging.csproj" />
+</Solution>
