@@ -168,20 +168,10 @@ public static class PlatformApiExtensions
         {
             app.MapOpenApi();
 
-            var baseUrl = Environment.GetEnvironmentVariable("BASE_URL") ?? Env.GetString("BASE_URL");
-
-            app.MapScalarApiReference("docs", options =>
-            {
-                options.Title = $"{cleanServiceName.ToUpper()} Service API Documentation";
-                if (!string.IsNullOrWhiteSpace(baseUrl))
-                {
-                    var cleanBaseUrl = baseUrl.TrimEnd('/');
-                    options.Servers = new List<ScalarServer>
-                    {
-                        new ScalarServer(cleanBaseUrl, "Default Gateway Base URL")
-                    };
-                }
-            });
+        app.MapScalarApiReference("docs", options =>
+        {
+            options.Title = $"{cleanServiceName.ToUpper()} Service API Documentation";
+        });
 
             Console.WriteLine($"📖 [{cleanServiceName.ToUpper()}] Docs available at: {pathBase}/docs");
         }
@@ -219,22 +209,7 @@ public static class PlatformApiExtensions
             };
         });
         
-        services.AddOpenApi(options =>
-        {
-            options.AddDocumentTransformer((document, context, cancellationToken) =>
-            {
-                var baseUrl = Environment.GetEnvironmentVariable("BASE_URL") ?? Env.GetString("BASE_URL");
-                if (!string.IsNullOrWhiteSpace(baseUrl))
-                {
-                    var cleanBaseUrl = baseUrl.TrimEnd('/');
-                    document.Servers = new List<Microsoft.OpenApi.OpenApiServer>
-                    {
-                        new Microsoft.OpenApi.OpenApiServer { Url = cleanBaseUrl, Description = "Gateway Host" }
-                    };
-                }
-                return System.Threading.Tasks.Task.CompletedTask;
-            });
-        });
+        services.AddOpenApi();
         return services;
     }
 }
