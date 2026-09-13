@@ -159,6 +159,15 @@ public static class PlatformApiExtensions
         // Add Global Exception Handler Middleware
         app.UseExceptionHandler();
 
+        // Ensure forwarded headers from Reverse Proxies (like YARP/NGINX) are applied
+        // This fixes OpenAPI/Scalar generating internal network URLs in the servers list
+        app.UseForwardedHeaders(new Microsoft.AspNetCore.Builder.ForwardedHeadersOptions
+        {
+            ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | 
+                               Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto | 
+                               Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedHost
+        });
+
         var pathBase = $"/api/v1/{cleanServiceName}";
         app.UsePathBase(pathBase);
 
