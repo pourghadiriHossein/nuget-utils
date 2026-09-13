@@ -165,7 +165,8 @@ public static class PlatformApiExtensions
         {
             ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | 
                                Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto | 
-                               Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedHost
+                               Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedHost,
+            ForwardLimit = null // Allow multiple hops (e.g. Cloudflare -> Liara Nginx -> API Gateway)
         };
         // By default, ASP.NET Core only trusts proxies from 127.0.0.1. 
         // In Docker, the Gateway has a different internal IP. We must clear these to trust our Gateway.
@@ -223,7 +224,28 @@ public static class PlatformApiExtensions
             };
         });
         
-        services.AddOpenApi();
+        services.AddHttpContextAccessor();
+        services.AddOpenApi(options =>
+        {
+            options.AddDocumentTransformer((document, context, cancellationToken) =>
+            {
+                var request = context.ApplicationServices.GetService<Microsoft.AspNetCore.Http.IHttpContextAccessor>()?.HttpContext?.Request;
+                if (request != null)
+                {
+                    // Fallback to Request.Scheme/Host if X-Forwarded headers are missing
+                    var proto = request.Headers["X-Forwarded-Proto"].FirstOrDefault() ?? request.Scheme;
+                    var host = request.Headers["X-Forwarded-Host"].FirstOrDefault() ?? request.Host.Value;
+                    
+                    document.Servers.Clear();
+                    document.Servers.Add(new() 
+                    { 
+                        Url = $"{proto}://{host}{request.PathBase}",
+                        Description = "API Gateway"
+                    });
+                }
+                return Task.CompletedTask;
+            });
+        });
         return services;
     }
 }
