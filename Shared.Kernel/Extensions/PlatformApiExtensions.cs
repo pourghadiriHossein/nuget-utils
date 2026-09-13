@@ -161,12 +161,17 @@ public static class PlatformApiExtensions
 
         // Ensure forwarded headers from Reverse Proxies (like YARP/NGINX) are applied
         // This fixes OpenAPI/Scalar generating internal network URLs in the servers list
-        app.UseForwardedHeaders(new Microsoft.AspNetCore.Builder.ForwardedHeadersOptions
+        var forwardedOptions = new Microsoft.AspNetCore.Builder.ForwardedHeadersOptions
         {
             ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | 
                                Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto | 
                                Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedHost
-        });
+        };
+        // By default, ASP.NET Core only trusts proxies from 127.0.0.1. 
+        // In Docker, the Gateway has a different internal IP. We must clear these to trust our Gateway.
+        forwardedOptions.KnownNetworks.Clear();
+        forwardedOptions.KnownProxies.Clear();
+        app.UseForwardedHeaders(forwardedOptions);
 
         var pathBase = $"/api/v1/{cleanServiceName}";
         app.UsePathBase(pathBase);
