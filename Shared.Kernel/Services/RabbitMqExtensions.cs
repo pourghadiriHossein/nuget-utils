@@ -1,44 +1,39 @@
 using System;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using DotNetEnv;
-using Shared.Kernel.Interfaces;
+using MassTransit;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Shared.Kernel.Services;
 
 public static class RabbitMqExtensions
 {
-    public static IServiceCollection AddRabbitMqListener<TMessage, THandler>(
+    public static IServiceCollection AddPlatformMassTransit(
         this IServiceCollection services, 
-        string queueEnvVarName)
-        where THandler : class, IRabbitMqMessageHandler<TMessage>
+        Action<IBusRegistrationConfigurator>? configure = null)
     {
-        services.AddScoped<THandler>();
-        
-        services.AddHostedService(provider =>
+        services.AddMassTransit(x =>
         {
-            var logger = provider.GetRequiredService<ILogger<RabbitMqListenerService<TMessage, THandler>>>();
-            
-            // Get Queue name from env
-            var queueName = Environment.GetEnvironmentVariable(queueEnvVarName) 
-                            ?? Env.GetString(queueEnvVarName);
-                            
-            if (string.IsNullOrEmpty(queueName))
-            {
-                // Fallback directly to the variable name if it wasn't found in env, though normally it should be in .env
-                queueName = queueEnvVarName; 
-            }
+            configure?.Invoke(x);
 
-            return new RabbitMqListenerService<TMessage, THandler>(provider, logger, queueName);
+            x.UsingRabbitMq((context, cfg) =>
+            {
+                var host = Environment.GetEnvironmentVariable("RABBITMQ_HOST") ?? Env.GetString("RABBITMQ_HOST") ?? "localhost";
+                var portStr = Environment.GetEnvironmentVariable("RABBITMQ_PORT") ?? Env.GetString("RABBITMQ_PORT");
+                var port = int.TryParse(portStr, out int p) ? p : 5672;
+                var user = Environment.GetEnvironmentVariable("RABBITMQ_USER") ?? Env.GetString("RABBITMQ_USER") ?? "docker";
+                var pass = Environment.GetEnvironmentVariable("RABBITMQ_PASS") ?? Env.GetString("RABBITMQ_PASS") ?? "docker";
+
+                cfg.Host(host, (ushort)port, "/", h =>
+                {
+                    h.Username(user);
+                    h.Password(pass);
+                });
+
+                // Configure standard durability etc automatically.
+                cfg.ConfigureEndpoints(context);
+            });
         });
 
-        return services;
-    }
-
-    public static IServiceCollection AddRabbitMqPublisher(this IServiceCollection services)
-    {
-        // Publisher should be a singleton to reuse the connection and channel efficiently
-        services.AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>();
         return services;
     }
 }

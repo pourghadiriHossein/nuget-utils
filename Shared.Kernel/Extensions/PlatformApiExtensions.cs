@@ -170,7 +170,7 @@ public static class PlatformApiExtensions
         };
         // By default, ASP.NET Core only trusts proxies from 127.0.0.1. 
         // In Docker, the Gateway has a different internal IP. We must clear these to trust our Gateway.
-        forwardedOptions.KnownNetworks.Clear();
+        forwardedOptions.KnownIPNetworks.Clear();
         forwardedOptions.KnownProxies.Clear();
         app.UseForwardedHeaders(forwardedOptions);
 
@@ -239,6 +239,7 @@ public static class PlatformApiExtensions
                     var proto = request.Headers["X-Forwarded-Proto"].FirstOrDefault() ?? request.Scheme;
                     var host = request.Headers["X-Forwarded-Host"].FirstOrDefault() ?? request.Host.Value;
                     
+                    document.Servers ??= [];
                     document.Servers.Clear();
                     document.Servers.Add(new() 
                     { 
