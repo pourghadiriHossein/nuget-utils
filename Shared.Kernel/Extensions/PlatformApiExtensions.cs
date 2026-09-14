@@ -179,6 +179,9 @@ public static class PlatformApiExtensions
 
         app.UseRouting();
 
+        // Enforce x-platform / x-workspace tenant boundaries
+        app.UseMiddleware<Shared.Kernel.Middlewares.TenantValidationMiddleware>();
+
         if (app.Environment.IsDevelopment())
         {
             app.MapOpenApi();
