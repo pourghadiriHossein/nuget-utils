@@ -53,6 +53,9 @@ public class IntPriorityJsonConverter : JsonConverter<int>
 
 public class NotificationMakeData
 {
+    [JsonPropertyName("language")]
+    public string Language { get; set; } = string.Empty;
+
     [JsonPropertyName("type")]
     public string Type { get; set; } = string.Empty;
 
