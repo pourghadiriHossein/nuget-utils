@@ -245,6 +245,37 @@ public static class PlatformApiExtensions
                 }
                 return Task.CompletedTask;
             });
+
+            options.AddOperationTransformer((operation, context, cancellationToken) =>
+            {
+                operation.Parameters ??= new List<Microsoft.OpenApi.IOpenApiParameter>();
+                
+                operation.Parameters.Add(new Microsoft.OpenApi.OpenApiParameter
+                {
+                    Name = "x-account",
+                    In = Microsoft.OpenApi.ParameterLocation.Header,
+                    Required = false,
+                    Schema = new Microsoft.OpenApi.OpenApiSchema { Type = Microsoft.OpenApi.JsonSchemaType.String }
+                });
+
+                operation.Parameters.Add(new Microsoft.OpenApi.OpenApiParameter
+                {
+                    Name = "x-language",
+                    In = Microsoft.OpenApi.ParameterLocation.Header,
+                    Required = false,
+                    Schema = new Microsoft.OpenApi.OpenApiSchema { Type = Microsoft.OpenApi.JsonSchemaType.String }
+                });
+
+                operation.Parameters.Add(new Microsoft.OpenApi.OpenApiParameter
+                {
+                    Name = "x-workspace",
+                    In = Microsoft.OpenApi.ParameterLocation.Header,
+                    Required = false,
+                    Schema = new Microsoft.OpenApi.OpenApiSchema { Type = Microsoft.OpenApi.JsonSchemaType.String }
+                });
+
+                return Task.CompletedTask;
+            });
         });
         return services;
     }
