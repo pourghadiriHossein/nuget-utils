@@ -72,6 +72,7 @@ public static class PlatformDbExtensions
         services.AddDbContext<TContext>(options =>
         {
             options.UseNpgsql(dataSource);
+            options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
         });
 
         return services;
