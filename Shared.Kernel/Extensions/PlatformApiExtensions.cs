@@ -252,30 +252,43 @@ public static class PlatformApiExtensions
 
             options.AddOperationTransformer((operation, context, cancellationToken) =>
             {
+                // ─────────────────────────────────────────────────────────────────────
+                // Single source-of-truth for all platform request headers.
+                // Do NOT add these headers anywhere else (no service-level transformers).
+                // All headers are optional here — services enforce requirements at runtime.
+                // ─────────────────────────────────────────────────────────────────────
                 operation.Parameters ??= new List<Microsoft.OpenApi.IOpenApiParameter>();
 
-                // Add platform headers only if they are not already present (deduplication guard)
-                void AddHeaderIfMissing(string name, bool required, Microsoft.OpenApi.JsonSchemaType type)
+                var platformHeaders = new (string Name, Microsoft.OpenApi.JsonSchemaType Type)[]
                 {
-                    var alreadyExists = operation.Parameters.Any(
+                    ("x-account",        Microsoft.OpenApi.JsonSchemaType.String),
+                    ("x-language",       Microsoft.OpenApi.JsonSchemaType.String),
+                    ("x-workspace",      Microsoft.OpenApi.JsonSchemaType.String),
+                    ("x-platform",       Microsoft.OpenApi.JsonSchemaType.Boolean),
+                    ("x-permission",     Microsoft.OpenApi.JsonSchemaType.String),
+                    ("x-scopes",         Microsoft.OpenApi.JsonSchemaType.String),
+                    ("x-authentication", Microsoft.OpenApi.JsonSchemaType.String),
+                    ("x-authorization",  Microsoft.OpenApi.JsonSchemaType.String),
+                    ("x-page",           Microsoft.OpenApi.JsonSchemaType.String),
+                    ("Authorization",    Microsoft.OpenApi.JsonSchemaType.String),
+                };
+
+                foreach (var (name, type) in platformHeaders)
+                {
+                    var exists = operation.Parameters.Any(
                         p => p is Microsoft.OpenApi.OpenApiParameter param &&
                              string.Equals(param.Name, name, StringComparison.OrdinalIgnoreCase));
-                    if (!alreadyExists)
+                    if (!exists)
                     {
                         operation.Parameters.Add(new Microsoft.OpenApi.OpenApiParameter
                         {
                             Name = name,
                             In = Microsoft.OpenApi.ParameterLocation.Header,
-                            Required = required,
+                            Required = false,
                             Schema = new Microsoft.OpenApi.OpenApiSchema { Type = type }
                         });
                     }
                 }
-
-                AddHeaderIfMissing("x-account",    required: false, Microsoft.OpenApi.JsonSchemaType.String);
-                AddHeaderIfMissing("x-language",   required: false, Microsoft.OpenApi.JsonSchemaType.String);
-                AddHeaderIfMissing("x-workspace",  required: false, Microsoft.OpenApi.JsonSchemaType.String);
-                AddHeaderIfMissing("x-platform",   required: false, Microsoft.OpenApi.JsonSchemaType.Boolean);
 
                 return Task.CompletedTask;
             });
