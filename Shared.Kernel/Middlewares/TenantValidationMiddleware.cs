@@ -35,9 +35,23 @@ public class TenantValidationMiddleware
         if (!isPlatform)
         {
             var workspaceHeader = context.Request.Headers["x-workspace"].ToString();
+            bool hasValidWorkspace = !string.IsNullOrWhiteSpace(workspaceHeader) && Guid.TryParse(workspaceHeader, out _);
+
+            // Strict check: if not a platform request, workspace is MANDATORY.
+            // Exception: /auth/identify and /auth/login/password can fallback to workspaceCode in payload.
+            bool isWorkspaceOptionalRoute = path.Contains("/auth/identify") || path.Contains("/auth/login/password");
+
+            if (!hasValidWorkspace && !isWorkspaceOptionalRoute)
+            {
+                context.Response.StatusCode = 403;
+                context.Response.ContentType = "application/json";
+                var response = ApiResponse<object>.Error(403, "Forbidden: Missing or invalid x-workspace header for tenant request.");
+                await context.Response.WriteAsync(JsonSerializer.Serialize(response, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
+                return;
+            }
 
             // Only inject if the workspace header is present and valid
-            if (!string.IsNullOrWhiteSpace(workspaceHeader) && Guid.TryParse(workspaceHeader, out _))
+            if (hasValidWorkspace)
             {
                 // Inject the workspace constraints into the query string for backend endpoints
                 // This safely forces JsonApiQueryOptions and [FromQuery] params to be scoped to the tenant's workspace
