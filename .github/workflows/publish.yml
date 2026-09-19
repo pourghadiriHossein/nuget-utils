@@ -22,16 +22,10 @@ jobs:
         dotnet-version: '10.0.x'
 
     - name: Restore dependencies
-      run: dotnet restore Shared.Kernel/Shared.Kernel.csproj
+      run: dotnet restore HPK.Core/HPK.Core.csproj
 
-    - name: Restore dependencies for Messaging
-      run: dotnet restore Shared.Messaging/Shared.Messaging.csproj
-
-    - name: Pack Shared.Kernel
-      run: dotnet pack Shared.Kernel/Shared.Kernel.csproj -c Release -p:PackageVersion=1.0.${{ github.run_number }} -p:ContinuousIntegrationBuild=true -o ./artifacts
-
-    - name: Pack Shared.Messaging
-      run: dotnet pack Shared.Messaging/Shared.Messaging.csproj -c Release -p:PackageVersion=1.0.${{ github.run_number }} -p:ContinuousIntegrationBuild=true -o ./artifacts
+    - name: Pack HPK.Core
+      run: dotnet pack HPK.Core/HPK.Core.csproj -c Release -p:PackageVersion=1.0.${{ github.run_number }} -p:ContinuousIntegrationBuild=true -o ./artifacts
 
     - name: Push packages to NuGet.org
       run: dotnet nuget push ./artifacts/*.nupkg --source "https://api.nuget.org/v3/index.json" --skip-duplicate --api-key ${{secrets.NUGET_API_KEY}}

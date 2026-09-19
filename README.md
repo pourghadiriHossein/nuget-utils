@@ -1,8 +1,8 @@
 # ICOT Shared Packages (icot-nuget)
 
-This repository contains the core shared libraries (`Shared.Kernel` and `Shared.Messaging`) used across the ICOT Microservices ecosystem. 
+This repository contains the core shared libraries (`hpk` and `hpk (Messaging features are now integrated)`) used across the ICOT Microservices ecosystem. 
 
-These packages are designed to provide **infrastructural building blocks** and cross-cutting concerns (authentication, API standardization, database extensions, and raw messaging pipelines).
+This package is designed to provide **infrastructural building blocks** and cross-cutting concerns (authentication, API standardization, database extensions, and raw messaging pipelines).
 
 ### 🏛️ Architectural Principles
 
@@ -12,5 +12,5 @@ These packages are designed to provide **infrastructural building blocks** and c
 
 ### 📦 Packages
 
-* **`Shared.Kernel`**: Core enums, JSON API models, standard API responses, filters, routing extensions, EF Core database extensions, and global error handling. ([View Docs](./Shared.Kernel/README.md))
-* **`Shared.Messaging`**: Base configuration for MassTransit and RabbitMQ, enabling raw JSON polyglot communication. ([View Docs](./Shared.Messaging/README.md))
+* **`hpk`**: Core enums, JSON API models, standard API responses, filters, routing extensions, EF Core database extensions, and global error handling. ([View Docs](./hpk/README.md))
+* **`hpk (Messaging features are now integrated)`**: Base configuration for MassTransit and RabbitMQ, enabling raw JSON polyglot communication. ([View Docs](./hpk (Messaging features are now integrated)/README.md))
