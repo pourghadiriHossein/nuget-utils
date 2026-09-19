@@ -1,46 +1,16 @@
-# 📦 nuget-utils (ICOT Shared Packages)
+# ICOT Shared Packages (icot-nuget)
 
-این مخزن شامل کتابخانه‌های هسته مشترک پلتفرم **ICOT** بر بستر **.NET 10.0** است که به صورت بسته‌های NuGet برای استفاده در تمامی میکروسرویس‌های پلتفرم به صورت عمومی در سایت رسمی **NuGet.org** منتشر می‌شوند.
+This repository contains the core shared libraries (`Shared.Kernel` and `Shared.Messaging`) used across the ICOT Microservices ecosystem. 
 
-- **آدرس مخزن:** [https://github.com/pourghadiriHossein/nuget-utils](https://github.com/pourghadiriHossein/nuget-utils)
+These packages are designed to provide **infrastructural building blocks** and cross-cutting concerns (authentication, API standardization, database extensions, and raw messaging pipelines).
 
----
+### 🏛️ Architectural Principles
 
-## 📚 پکیج‌های موجود
+1. **No Domain Logic**: These packages must never contain business logic, domain models, or service-specific interfaces.
+2. **No Shared Event Models**: Do not put event definitions (e.g., `CustomerAddEventData`, `AccountPermissionSyncEvent`, `MessengerEventMessage`) in these libraries. Event contracts must be defined and owned by the individual microservices. By utilizing MassTransit's Raw JSON Serialization, services can publish anonymous objects and consume them into local representations without needing a shared assembly.
+3. **Pluggable & Extensible**: Components here should act as middleware or extension methods that standard ASP.NET Core applications can plug into seamlessly.
 
-### ۱. `Icot.Shared.Kernel`
-شامل ماژول‌های اساسی مورد استفاده در تمام سرویس‌ها:
-- **مدیریت ارتباط و صف با RabbitMQ**: اینترفیس `IRabbitMqPublisher` و سرویس شنونده `RabbitMqListenerService`.
-- **موجودیت‌ها و مدل‌های پایه (Entities & DTOs)**: کلاس‌های پایه شناسه‌ها، فیلترها و پاسخ‌های استاندارد API (`ApiResponse`).
-- **میدلورها و فیلترها (Middlewares & Filters)**: مدیریت خطاها، ولیدیشن و لاگینگ.
-- **توابع کمکی و اکستنشن‌ها (Extensions)**: ابزارهای کمکی LINQ و فرمت‌بندی JSON.
+### 📦 Packages
 
-### ۲. `Icot.Shared.Messaging`
-ماژول اختصاصی مدیریت پیام‌رسانی پیشرفته با **MassTransit** و **RabbitMQ**.
-
----
-
-## 💻 نحوه استفاده در میکروسرویس‌ها
-
-از آنجایی که پکیج‌ها به صورت عمومی و استاندارد روی سایت رسمی `Nuget.org` قرار دارند، **هیچ نیازی به تنظیمات فایل `nuget.config` یا توکن گیت‌هاب نیست!** کافیست دستورات زیر را در پوشه پروژه خود اجرا کنید:
-
-```bash
-dotnet add package Icot.Shared.Kernel
-dotnet add package Icot.Shared.Messaging
-```
-
-یا اگر می‌خواهید (مثل معماری فعلی پلتفرم) پروژه‌ها همیشه به صورت خودکار آخرین نسخه را دریافت کنند، از ورژن شناور در فایل `.csproj` استفاده کنید:
-
-```xml
-<PackageReference Include="Icot.Shared.Kernel" Version="1.0.*" />
-<PackageReference Include="Icot.Shared.Messaging" Version="1.0.*" />
-```
-
----
-
-## 🚀 انتشار خودکار نسخه جدید (GitHub Actions)
-
-این مخزن مجهز به اکشن‌های گیت‌هاب (GitHub Actions) است. با هر بار **پوش کردن کد روی برنچ `main`**، اتفاقات زیر به صورت خودکار رخ می‌دهد:
-۱. بیلدهای جدید شماره‌گذاری می‌شوند (نسخه‌بندی داینامیک).
-۲. پکیج‌های `.nupkg` ساخته می‌شوند.
-۳. گیت‌هاب با روش فوق‌امنیتی **Trusted Publishing (OIDC)** و کاملاً بدون نیاز به پسورد یا Secretهای دستی، پکیج‌های جدید را مستقیماً روی سایت Nuget.org آپلود می‌کند!
+* **`Shared.Kernel`**: Core enums, JSON API models, standard API responses, filters, routing extensions, EF Core database extensions, and global error handling. ([View Docs](./Shared.Kernel/README.md))
+* **`Shared.Messaging`**: Base configuration for MassTransit and RabbitMQ, enabling raw JSON polyglot communication. ([View Docs](./Shared.Messaging/README.md))
