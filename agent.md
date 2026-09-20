@@ -3,21 +3,19 @@
 This file serves as the definitive reference for any AI agent interacting with the `icot-nuget` directory. `icot-nuget` contains the core shared libraries used across all 13+ microservices in the ICOT platform.
 
 ## 📦 Architecture & Packages
-The directory is divided into two primary NuGet packages:
+The directory contains the primary NuGet package:
 
-### 1. Icot.Shared.Kernel
+### 1. HPK.Core
 The backbone of the microservice architecture. It provides standardized behaviors, middlewares, and extensions so microservices don't have to rewrite boilerplate.
 - **Base Entities**: Standardized base classes for EF Core (e.g., `BaseEntity`).
 - **Standardized Responses**: The `ApiResponse<T>` wrapper ensures all microservices return exactly the same JSON structure.
 - **Global Error Handling**: `GlobalExceptionHandler` automatically intercepts exceptions and formats them into an `ApiResponse`.
 - **OpenAPI & Scalar Docs**: `PlatformApiExtensions.cs` configures OpenAPI. It includes an `OperationTransformer` that globally injects `x-account`, `x-language`, and `x-workspace` as default header parameters into all endpoints across all microservices.
 - **Proxy Configuration**: Configures `ForwardedHeadersOptions` to trust the internal API Gateway (YARP), ensuring Swagger generates correct HTTPS/Host URLs.
-
-### 2. Icot.Shared.Messaging
-- Handles inter-service communication using RabbitMQ.
+- **Messaging**: Handles inter-service communication using MassTransit and RabbitMQ.
 
 ## 🛡️ Security & Tenant Isolation (TenantValidationMiddleware)
-A critical part of `Icot.Shared.Kernel` is the `TenantValidationMiddleware`. It universally enforces multi-tenancy rules across all microservices before requests even reach the controllers:
+A critical part of `HPK.Core` is the `TenantValidationMiddleware`. It universally enforces multi-tenancy rules across all microservices before requests even reach the controllers:
 - **x-platform == "true"**: The caller has supreme privileges. They bypass `x-workspace` restrictions and can view/modify any workspace data.
 - **x-platform != "true"**: The caller is a tenant.
   - The `x-workspace` header MUST be present and valid. If missing, the middleware returns `403 Forbidden`.
@@ -25,20 +23,13 @@ A critical part of `Icot.Shared.Kernel` is the `TenantValidationMiddleware`. It 
 
 ## ⚠️ Development Rules (MUST READ)
 
-1. **NuGet Versioning**: All microservices reference these packages using wildcards:
+1. **NuGet Versioning**: All microservices reference this package using wildcards:
    ```xml
-   <PackageReference Include="Icot.Shared.Kernel" Version="*" />
-   <PackageReference Include="Icot.Shared.Messaging" Version="*" />
+   <PackageReference Include="HPK.Core" Version="*" />
    ```
-   **CRITICAL**: NEVER change this to a hardcoded version (e.g., `1.0.8`) in the microservice `.csproj` files. The wildcard ensures that simply running `dotnet restore` pulls the latest version published locally.
+   **CRITICAL**: NEVER change this to a hardcoded version (e.g., `1.0.8`) in the microservice `.csproj` files.
 
 2. **Publishing Updates**:
-   When you make changes to `Shared.Kernel` or `Shared.Messaging`, you must bump the package version and pack it to the local feed:
-   ```bash
-   cd icot-nuget/Shared.Kernel
-   dotnet build
-   dotnet pack -c Release -p:PackageVersion=<NEW_VERSION> -p:Version=<NEW_VERSION> -o ../../nuget-local
-   ```
-   (After packing, the microservices just need a rebuild/restore to automatically consume the new logic).
+   When you make changes to `HPK.Core`, you must bump the version and publish it.
 
-3. **Global Impact**: Any change made to `Shared.Kernel` instantly impacts ALL microservices. Always double-check nullability, dependencies, and performance before modifying core middlewares or filters.
+3. **Global Impact**: Any change made to `HPK.Core` instantly impacts ALL microservices. Always double-check nullability, dependencies, and performance before modifying core middlewares or filters.
