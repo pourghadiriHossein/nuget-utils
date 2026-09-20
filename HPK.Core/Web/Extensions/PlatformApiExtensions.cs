@@ -189,6 +189,8 @@ public static class PlatformApiExtensions
         app.MapScalarApiReference("docs", options =>
         {
             options.Title = $"{cleanServiceName.ToUpper()} Service API Documentation";
+            // Use an absolute path so it resolves correctly regardless of trailing slash on /docs/
+            options.OpenApiRoutePattern = $"/api/v1/{cleanServiceName.ToLower()}/openapi/v1.json";
         });
 
             Console.WriteLine($"📖 [{cleanServiceName.ToUpper()}] Docs available at: {pathBase}/docs");
