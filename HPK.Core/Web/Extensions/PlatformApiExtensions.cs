@@ -189,8 +189,10 @@ public static class PlatformApiExtensions
         app.MapScalarApiReference("docs", options =>
         {
             options.Title = $"{cleanServiceName.ToUpper()} Service API Documentation";
-            // Use an absolute path so it resolves correctly regardless of trailing slash on /docs/
-            options.OpenApiRoutePattern = $"/api/v1/{cleanServiceName.ToLower()}/openapi/v1.json";
+            // Scalar trims leading slashes, which breaks absolute paths when hosted under a PathBase.
+            // Since MapScalarApiReference redirects `/docs` to `/docs/`, we can safely use a relative
+            // path `../` to traverse up from `docs/` back to the service root where `openapi/v1.json` is served.
+            options.OpenApiRoutePattern = "../openapi/v1.json";
         });
 
             Console.WriteLine($"📖 [{cleanServiceName.ToUpper()}] Docs available at: {pathBase}/docs");
