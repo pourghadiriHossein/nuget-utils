@@ -116,11 +116,11 @@ public static class PlatformApiExtensions
             rawUrl = rawUrl.TrimEnd('/');
             if (Uri.TryCreate(rawUrl, UriKind.Absolute, out var uri))
             {
-                bindingUrl = $"{uri.Scheme}://{uri.Host}:{rawPort}";
+                bindingUrl = $"{uri.Scheme}://0.0.0.0:{rawPort}";
             }
             else
             {
-                bindingUrl = $"{rawUrl}:{rawPort}";
+                bindingUrl = $"http://0.0.0.0:{rawPort}";
             }
         }
 
