@@ -192,7 +192,7 @@ public static class PlatformApiExtensions
             options.OpenApiRoutePattern = "openapi/v1.json";
             options.Authentication = new ScalarAuthenticationOptions
             {
-                PreferredSecuritySchemes = new[] { "Bearer" }
+                PreferredSecuritySchemes = new[] { "Bearer", "x-workspace", "x-language", "x-account", "x-platform", "x-permission", "x-scopes", "x-authentication", "x-authorization", "x-page" }
             };
         });
 
@@ -264,52 +264,28 @@ public static class PlatformApiExtensions
                     Description = "Enter your JWT token to authenticate."
                 };
 
-
-                return Task.CompletedTask;
-            });
-
-            options.AddOperationTransformer((operation, context, cancellationToken) =>
-            {
-                // ─────────────────────────────────────────────────────────────────────
-                // Single source-of-truth for all platform request headers.
-                // Do NOT add these headers anywhere else (no service-level transformers).
-                // All headers are optional here — services enforce requirements at runtime.
-                // ─────────────────────────────────────────────────────────────────────
-                operation.Parameters ??= new List<Microsoft.OpenApi.IOpenApiParameter>();
-
-                var platformHeaders = new (string Name, Microsoft.OpenApi.JsonSchemaType Type)[]
+                var platformHeaders = new[]
                 {
-                    ("x-account",        Microsoft.OpenApi.JsonSchemaType.String),
-                    ("x-language",       Microsoft.OpenApi.JsonSchemaType.String),
-                    ("x-workspace",      Microsoft.OpenApi.JsonSchemaType.String),
-                    ("x-platform",       Microsoft.OpenApi.JsonSchemaType.Boolean),
-                    ("x-permission",     Microsoft.OpenApi.JsonSchemaType.String),
-                    ("x-scopes",         Microsoft.OpenApi.JsonSchemaType.String),
-                    ("x-authentication", Microsoft.OpenApi.JsonSchemaType.String),
-                    ("x-authorization",  Microsoft.OpenApi.JsonSchemaType.String),
-                    ("x-page",           Microsoft.OpenApi.JsonSchemaType.String),
-                    ("Authorization",    Microsoft.OpenApi.JsonSchemaType.String),
+                    "x-account", "x-language", "x-workspace", "x-platform",
+                    "x-permission", "x-scopes", "x-authentication", "x-authorization", "x-page"
                 };
 
-                foreach (var (name, type) in platformHeaders)
+                foreach (var header in platformHeaders)
                 {
-                    var exists = operation.Parameters.Any(
-                        p => p is Microsoft.OpenApi.OpenApiParameter param &&
-                             string.Equals(param.Name, name, StringComparison.OrdinalIgnoreCase));
-                    if (!exists)
+                    document.Components.SecuritySchemes[header] = new Microsoft.OpenApi.OpenApiSecurityScheme
                     {
-                        operation.Parameters.Add(new Microsoft.OpenApi.OpenApiParameter
-                        {
-                            Name = name,
-                            In = Microsoft.OpenApi.ParameterLocation.Header,
-                            Required = false,
-                            Schema = new Microsoft.OpenApi.OpenApiSchema { Type = type }
-                        });
-                    }
+                        Type = Microsoft.OpenApi.SecuritySchemeType.ApiKey,
+                        In = Microsoft.OpenApi.ParameterLocation.Header,
+                        Name = header,
+                        Description = $"Global header for {header}"
+                    };
                 }
+
 
                 return Task.CompletedTask;
             });
+
+            
         });
         return services;
     }
