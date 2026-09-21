@@ -189,11 +189,11 @@ public static class PlatformApiExtensions
         app.MapScalarApiReference("docs", options =>
         {
             options.Title = $"{cleanServiceName.ToUpper()} Service API Documentation";
-            // Scalar's JavaScript (scalar.aspnetcore.js) dynamically calculates the base path by removing `/docs/`
-            // from the browser's URL. For example, `/api/v1/action/docs/` becomes the base `/api/v1/action/`.
-            // By specifying a purely relative path like `openapi/v1.json` here, Scalar JS will natively resolve it 
-            // to `/api/v1/action/openapi/v1.json` correctly.
             options.OpenApiRoutePattern = "openapi/v1.json";
+            options.Authentication = new ScalarAuthenticationOptions
+            {
+                PreferredSecuritySchemes = new[] { "Bearer" }
+            };
         });
 
             Console.WriteLine($"📖 [{cleanServiceName.ToUpper()}] Docs available at: {pathBase}/docs");
@@ -252,6 +252,19 @@ public static class PlatformApiExtensions
                         Description = "API Gateway"
                     });
                 }
+
+                // Add Authentication (Bearer) to OpenAPI Document
+                document.Components ??= new Microsoft.OpenApi.OpenApiComponents();
+                document.Components.SecuritySchemes ??= new Dictionary<string, Microsoft.OpenApi.IOpenApiSecurityScheme>();
+                document.Components.SecuritySchemes["Bearer"] = new Microsoft.OpenApi.OpenApiSecurityScheme
+                {
+                    Type = Microsoft.OpenApi.SecuritySchemeType.Http,
+                    Scheme = "bearer",
+                    BearerFormat = "JWT",
+                    Description = "Enter your JWT token to authenticate."
+                };
+
+
                 return Task.CompletedTask;
             });
 
