@@ -186,10 +186,11 @@ public static class JsonApiExtensions
         else if (value.StartsWith("<")) { op = "<"; cleanValue = value.Substring(1); }
         else if (value.StartsWith("!")) { op = "!="; cleanValue = value.Substring(1); }
         else if (value.StartsWith("==")) { op = "=="; cleanValue = value.Substring(2); }
+        else if (value.StartsWith("=")) { op = "=="; cleanValue = value.Substring(1); }
 
         if (isString)
         {
-            if (op == "==" && value.StartsWith("==")) 
+            if (op == "==" && (value.StartsWith("==") || value.StartsWith("="))) 
             {
                 parameters.Add(cleanValue);
                 return $"{field} == @{parameters.Count - 1}";
@@ -228,6 +229,14 @@ public static class JsonApiExtensions
             
         if (underlyingType.IsEnum)
             return System.Enum.Parse(underlyingType, value, true);
+
+        if (underlyingType == typeof(System.DateTime))
+        {
+            var dt = System.Convert.ToDateTime(value);
+            if (dt.Kind == System.DateTimeKind.Unspecified)
+                return System.DateTime.SpecifyKind(dt, System.DateTimeKind.Utc);
+            return dt.ToUniversalTime();
+        }
 
         return System.Convert.ChangeType(value, underlyingType);
     }
@@ -301,20 +310,34 @@ public static class JsonApiExtensions
 
         if (!finalFields.Any()) return data;
 
-        string selectString = $"new ({string.Join(", ", finalFields)})";
-
+        // Use dictionaries for shaping to avoid Dynamic LINQ reserved keyword issues (like 'Parent')
         if (isCollection)
         {
-            var queryable = ((System.Collections.IEnumerable)data).AsQueryable();
-            return System.Linq.Dynamic.Core.DynamicQueryableExtensions.Select(queryable, selectString).ToDynamicList();
+            var list = new System.Collections.Generic.List<System.Collections.Generic.Dictionary<string, object>>();
+            foreach (var item in (System.Collections.IEnumerable)data)
+            {
+                if (item == null) continue;
+                var dict = new System.Collections.Generic.Dictionary<string, object>();
+                foreach (var field in finalFields)
+                {
+                    var prop = elementType.GetProperty(field);
+                    if (prop != null)
+                        dict[field] = prop.GetValue(item);
+                }
+                list.Add(dict);
+            }
+            return list;
         }
         else
         {
-            var arr = System.Array.CreateInstance(elementType, 1);
-            arr.SetValue(data, 0);
-            var queryable = arr.AsQueryable();
-            var dynamicList = System.Linq.Dynamic.Core.DynamicQueryableExtensions.Select(queryable, selectString).ToDynamicList();
-            return dynamicList.FirstOrDefault();
+            var dict = new System.Collections.Generic.Dictionary<string, object>();
+            foreach (var field in finalFields)
+            {
+                var prop = elementType.GetProperty(field);
+                if (prop != null)
+                    dict[field] = prop.GetValue(data);
+            }
+            return dict;
         }
     }
 }
