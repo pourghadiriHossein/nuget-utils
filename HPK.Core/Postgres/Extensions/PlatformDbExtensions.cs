@@ -15,6 +15,7 @@ public static class PlatformDbExtensions
     public static IServiceCollection AddPlatformDbContext<TContext>(this IServiceCollection services, string defaultDbName, string? envDbKey = null) 
         where TContext : DbContext
     {
+        services.AddScoped<HPK.Core.Postgres.Interceptors.PlatformSaveChangesInterceptor>();
         // Load .env file (assuming it is in the root directory)
         var rootDir = Directory.GetCurrentDirectory();
         while (!File.Exists(Path.Combine(rootDir, ".env")) && Directory.GetParent(rootDir) != null)
@@ -69,9 +70,10 @@ public static class PlatformDbExtensions
         dataSourceBuilder.EnableDynamicJson();
         var dataSource = dataSourceBuilder.Build();
 
-        services.AddDbContext<TContext>(options =>
+        services.AddDbContext<TContext>((sp, options) =>
         {
             options.UseNpgsql(dataSource);
+            options.AddInterceptors(sp.GetRequiredService<HPK.Core.Postgres.Interceptors.PlatformSaveChangesInterceptor>());
             options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
         });
 
