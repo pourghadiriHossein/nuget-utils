@@ -28,24 +28,66 @@ public static class JsonApiExtensions
         // 2. Filtering (?filter[name]=john&filter[status]=active)
         if (options.Filter != null && options.Filter.Any())
         {
+            var andClauses = new System.Collections.Generic.List<string>();
+            var parameters = new System.Collections.Generic.List<object>();
+
             foreach (var filter in options.Filter)
             {
-                var field = ToPascalCase(filter.Key.Trim());
-                var value = filter.Value?.Trim();
-                
-                if (string.IsNullOrEmpty(field) || string.IsNullOrEmpty(value)) continue;
+                var rawKey = filter.Key.Trim();
+                var rawValue = filter.Value?.Trim();
+                if (string.IsNullOrEmpty(rawKey) || string.IsNullOrEmpty(rawValue)) continue;
 
-                // Simple exact match or string contains check
-                bool isString = typeof(T).GetProperty(field, System.Reflection.BindingFlags.IgnoreCase | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)?.PropertyType == typeof(string);
-                
-                if (isString)
+                // Handle global OR across multiple fields: ?filter[$or]=age:>18|name:john
+                if (rawKey.Equals("$or", System.StringComparison.OrdinalIgnoreCase))
                 {
-                    query = query.Where($"{field}.Contains(@0)", value);
+                    var orConditions = rawValue.Split('|', System.StringSplitOptions.RemoveEmptyEntries);
+                    var orClauses = new System.Collections.Generic.List<string>();
+                    foreach (var condition in orConditions)
+                    {
+                        var parts = condition.Split(':', 2);
+                        if (parts.Length == 2)
+                        {
+                            var orFieldName = ToPascalCase(parts[0].Trim());
+                            var orPropInfo = typeof(T).GetProperty(orFieldName, System.Reflection.BindingFlags.IgnoreCase | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                            if (orPropInfo != null)
+                            {
+                                var parsed = BuildCondition(orFieldName, parts[1].Trim(), orPropInfo.PropertyType, parameters);
+                                if (!string.IsNullOrEmpty(parsed)) orClauses.Add(parsed);
+                            }
+                        }
+                    }
+                    if (orClauses.Any()) andClauses.Add($"({string.Join(" || ", orClauses)})");
+                    continue;
+                }
+
+                // Normal AND field
+                var field = ToPascalCase(rawKey);
+                var propertyInfo = typeof(T).GetProperty(field, System.Reflection.BindingFlags.IgnoreCase | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                if (propertyInfo == null) continue;
+
+                // Handle OR for the same field: ?filter[status]=active|pending (not starting with in:/nin:)
+                if (rawValue.Contains("|") && !rawValue.StartsWith("in:", System.StringComparison.OrdinalIgnoreCase) && !rawValue.StartsWith("nin:", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    var fieldOrClauses = new System.Collections.Generic.List<string>();
+                    var values = rawValue.Split('|', System.StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var v in values)
+                    {
+                        var parsed = BuildCondition(field, v.Trim(), propertyInfo.PropertyType, parameters);
+                        if (!string.IsNullOrEmpty(parsed)) fieldOrClauses.Add(parsed);
+                    }
+                    if (fieldOrClauses.Any()) andClauses.Add($"({string.Join(" || ", fieldOrClauses)})");
                 }
                 else
                 {
-                    query = query.Where($"{field} == @0", value);
+                    var parsed = BuildCondition(field, rawValue, propertyInfo.PropertyType, parameters);
+                    if (!string.IsNullOrEmpty(parsed)) andClauses.Add(parsed);
                 }
+            }
+
+            if (andClauses.Any())
+            {
+                var combinedWhere = string.Join(" && ", andClauses);
+                query = query.Where(combinedWhere, parameters.ToArray());
             }
         }
 
@@ -53,18 +95,27 @@ public static class JsonApiExtensions
         if (!string.IsNullOrWhiteSpace(options.Sort))
         {
             var sortFields = options.Sort.Split(',', System.StringSplitOptions.RemoveEmptyEntries);
-            var orderByStrings = sortFields.Select(f => 
+            var validOrderByStrings = new System.Collections.Generic.List<string>();
+
+            foreach (var f in sortFields)
             {
                 var field = f.Trim();
-                if (field.StartsWith("-"))
+                bool isDescending = field.StartsWith("-");
+                var cleanField = isDescending ? field.Substring(1) : field;
+                var pascalField = ToPascalCase(cleanField);
+
+                var propertyInfo = typeof(T).GetProperty(pascalField, System.Reflection.BindingFlags.IgnoreCase | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                if (propertyInfo != null)
                 {
-                    return $"{ToPascalCase(field.Substring(1))} descending";
+                    validOrderByStrings.Add(isDescending ? $"{pascalField} descending" : pascalField);
                 }
-                return ToPascalCase(field);
-            });
+            }
             
-            var sortExpression = string.Join(", ", orderByStrings);
-            query = query.OrderBy(sortExpression);
+            if (validOrderByStrings.Any())
+            {
+                var sortExpression = string.Join(", ", validOrderByStrings);
+                query = query.OrderBy(sortExpression);
+            }
         }
 
         // 4. Pagination
@@ -93,5 +144,177 @@ public static class JsonApiExtensions
             }
         }
         return string.Join("", words);
+    }
+
+    private static string BuildCondition(string field, string value, System.Type propertyType, System.Collections.Generic.List<object> parameters)
+    {
+        bool isString = propertyType == typeof(string);
+
+        // IN / NOT IN
+        if (value.StartsWith("in:", System.StringComparison.OrdinalIgnoreCase))
+        {
+            var inValues = value.Substring(3).Split(',', System.StringSplitOptions.RemoveEmptyEntries);
+            var typedList = ConvertList(inValues, propertyType);
+            if (typedList != null)
+            {
+                parameters.Add(typedList);
+                return $"@{parameters.Count - 1}.Contains({field})";
+            }
+            return null;
+        }
+        if (value.StartsWith("nin:", System.StringComparison.OrdinalIgnoreCase))
+        {
+            var ninValues = value.Substring(4).Split(',', System.StringSplitOptions.RemoveEmptyEntries);
+            var typedList = ConvertList(ninValues, propertyType);
+            if (typedList != null)
+            {
+                parameters.Add(typedList);
+                return $"!@{parameters.Count - 1}.Contains({field})";
+            }
+            return null;
+        }
+
+        string op = "==";
+        string cleanValue = value;
+
+        if (value.StartsWith(">=")) { op = ">="; cleanValue = value.Substring(2); }
+        else if (value.StartsWith("<=")) { op = "<="; cleanValue = value.Substring(2); }
+        else if (value.StartsWith("!=")) { op = "!="; cleanValue = value.Substring(2); }
+        else if (value.StartsWith("!>")) { op = "<="; cleanValue = value.Substring(2); }
+        else if (value.StartsWith("!<")) { op = ">="; cleanValue = value.Substring(2); }
+        else if (value.StartsWith(">")) { op = ">"; cleanValue = value.Substring(1); }
+        else if (value.StartsWith("<")) { op = "<"; cleanValue = value.Substring(1); }
+        else if (value.StartsWith("!")) { op = "!="; cleanValue = value.Substring(1); }
+        else if (value.StartsWith("==")) { op = "=="; cleanValue = value.Substring(2); }
+
+        if (isString)
+        {
+            if (op == "==" && value.StartsWith("==")) 
+            {
+                parameters.Add(cleanValue);
+                return $"{field} == @{parameters.Count - 1}";
+            }
+            if (op == "!=" || value.StartsWith("!"))
+            {
+                parameters.Add(cleanValue);
+                return $"{field} != @{parameters.Count - 1}";
+            }
+            
+            // Default string behavior is Contains
+            parameters.Add(cleanValue);
+            return $"{field}.Contains(@{parameters.Count - 1})";
+        }
+        else
+        {
+            try
+            {
+                var convertedValue = ConvertValue(cleanValue, propertyType);
+                parameters.Add(convertedValue);
+                return $"{field} {op} @{parameters.Count - 1}";
+            }
+            catch
+            {
+                return null; 
+            }
+        }
+    }
+
+    private static object ConvertValue(string value, System.Type targetType)
+    {
+        var underlyingType = System.Nullable.GetUnderlyingType(targetType) ?? targetType;
+        
+        if (underlyingType == typeof(System.Guid))
+            return System.Guid.Parse(value);
+            
+        if (underlyingType.IsEnum)
+            return System.Enum.Parse(underlyingType, value, true);
+
+        return System.Convert.ChangeType(value, underlyingType);
+    }
+
+    private static System.Collections.IList ConvertList(string[] values, System.Type targetType)
+    {
+        try
+        {
+            var underlyingType = System.Nullable.GetUnderlyingType(targetType) ?? targetType;
+            var listType = typeof(System.Collections.Generic.List<>).MakeGenericType(underlyingType);
+            var list = (System.Collections.IList)System.Activator.CreateInstance(listType);
+
+            foreach (var v in values)
+            {
+                list.Add(ConvertValue(v.Trim(), underlyingType));
+            }
+            return list;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Dynamically shapes the output data by selecting or excluding fields based on a comma-separated list.
+    /// Supports -field for exclusion.
+    /// </summary>
+    public static object ShapeData(object data, string selectQuery)
+    {
+        if (data == null || string.IsNullOrWhiteSpace(selectQuery)) return data;
+
+        bool isCollection = data is System.Collections.IEnumerable && data.GetType() != typeof(string);
+        
+        var elementType = isCollection 
+            ? (data.GetType().GetGenericArguments().FirstOrDefault() ?? data.GetType().GetElementType())
+            : data.GetType();
+
+        if (elementType == null) return data;
+
+        var properties = elementType.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
+                                    .Select(p => p.Name)
+                                    .ToList();
+
+        var selectFields = selectQuery.Split(',', System.StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
+
+        var includedFields = new System.Collections.Generic.List<string>();
+        var excludedFields = new System.Collections.Generic.List<string>();
+
+        foreach (var field in selectFields)
+        {
+            if (field.StartsWith("-")) excludedFields.Add(ToPascalCase(field.Substring(1)));
+            else includedFields.Add(ToPascalCase(field));
+        }
+
+        var finalFields = new System.Collections.Generic.List<string>();
+
+        if (includedFields.Any())
+        {
+            finalFields = properties.Where(p => includedFields.Contains(p, System.StringComparer.OrdinalIgnoreCase)).ToList();
+        }
+        else
+        {
+            finalFields = properties.ToList();
+        }
+
+        if (excludedFields.Any())
+        {
+            finalFields.RemoveAll(p => excludedFields.Contains(p, System.StringComparer.OrdinalIgnoreCase));
+        }
+
+        if (!finalFields.Any()) return data;
+
+        string selectString = $"new ({string.Join(", ", finalFields)})";
+
+        if (isCollection)
+        {
+            var queryable = ((System.Collections.IEnumerable)data).AsQueryable();
+            return System.Linq.Dynamic.Core.DynamicQueryableExtensions.Select(queryable, selectString).ToDynamicList();
+        }
+        else
+        {
+            var arr = System.Array.CreateInstance(elementType, 1);
+            arr.SetValue(data, 0);
+            var queryable = arr.AsQueryable();
+            var dynamicList = System.Linq.Dynamic.Core.DynamicQueryableExtensions.Select(queryable, selectString).ToDynamicList();
+            return dynamicList.FirstOrDefault();
+        }
     }
 }

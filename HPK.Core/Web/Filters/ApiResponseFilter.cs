@@ -54,6 +54,16 @@ public class ApiResponseFilter : IAsyncResultFilter
                 }
             }
 
+            // Apply Dynamic Select Shaping if ?select is provided
+            if (context.HttpContext.Request.Query.TryGetValue("select", out var selectValues))
+            {
+                string selectString = selectValues.ToString();
+                if (!string.IsNullOrWhiteSpace(selectString) && payloadData != null)
+                {
+                    payloadData = HPK.Core.JsonApi.JsonApiExtensions.ShapeData(payloadData, selectString);
+                }
+            }
+
             var statusCode = objectResult.StatusCode ?? context.HttpContext.Response.StatusCode;
             if (statusCode == 0) statusCode = 200;
             

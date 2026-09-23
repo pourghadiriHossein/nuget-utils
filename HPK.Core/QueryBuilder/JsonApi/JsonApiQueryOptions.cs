@@ -18,6 +18,9 @@ public class JsonApiQueryOptions
     [FromQuery(Name = "include")]
     public string? Include { get; set; }
 
+    [FromQuery(Name = "select")]
+    public string? Select { get; set; }
+
     [FromQuery(Name = "page")]
     public Dictionary<string, int> Page { get; set; } = new();
 
