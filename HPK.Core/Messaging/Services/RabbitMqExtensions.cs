@@ -30,7 +30,7 @@ public static class RabbitMqExtensions
                 });
 
                 // Use Raw JSON serialization across all platform microservices
-                cfg.UseRawJsonSerializer();
+                cfg.UseRawJsonSerializer(RawSerializerOptions.AnyMessageType);
 
                 // Configure standard durability etc automatically.
                 cfg.ConfigureEndpoints(context);
