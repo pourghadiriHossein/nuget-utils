@@ -204,6 +204,8 @@ public static class PlatformApiExtensions
 
     public static IServiceCollection AddPlatformApiStandard(this IServiceCollection services)
     {
+        services.AddHttpClient();
+        services.AddScoped<HPK.Core.Utils.Services.IInternalValidationService, HPK.Core.Utils.Services.InternalValidationService>();
         // 1. Add Global Exception Handler
         services.AddExceptionHandler<HPK.Core.Middlewares.GlobalExceptionHandler>();
         services.AddProblemDetails();
