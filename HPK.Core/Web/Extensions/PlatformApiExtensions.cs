@@ -44,34 +44,6 @@ public static class PlatformApiExtensions
             $"POSTGRES_{upperName}_URL"
         };
 
-        string[] portKeys;
-        if (isProduction)
-        {
-            portKeys = new[]
-            {
-                $"{upperName}_SERVICE_PRODUCTION_PORT",
-                $"{upperName}_PRODUCTION_PORT",
-                $"POSTGRES_{upperName}_SERVICE_PRODUCTION_PORT",
-                $"{upperName}_SERVICE_PORT",
-                $"{upperName}_PORT",
-                $"{upperName}_SERVICE_DEVELOPMENT_PORT",
-                $"{upperName}_DEVELOPMENT_PORT"
-            };
-        }
-        else
-        {
-            portKeys = new[]
-            {
-                $"{upperName}_SERVICE_DEVELOPMENT_PORT",
-                $"{upperName}_DEVELOPMENT_PORT",
-                $"POSTGRES_{upperName}_SERVICE_DEVELOPMENT_PORT",
-                $"{upperName}_SERVICE_PORT",
-                $"{upperName}_PORT",
-                $"{upperName}_SERVICE_PRODUCTION_PORT",
-                $"{upperName}_PRODUCTION_PORT"
-            };
-        }
-
         string? rawUrl = null;
         foreach (var key in urlKeys)
         {
@@ -83,50 +55,17 @@ public static class PlatformApiExtensions
             }
         }
 
-        string? rawPort = null;
-        foreach (var key in portKeys)
+        if (string.IsNullOrEmpty(rawUrl) || !Uri.TryCreate(rawUrl, UriKind.Absolute, out var uri))
         {
-            var val = Environment.GetEnvironmentVariable(key) ?? Env.GetString(key);
-            if (!string.IsNullOrWhiteSpace(val))
-            {
-                rawPort = val.Trim();
-                break;
-            }
+            uri = new Uri("http://localhost:5000");
         }
 
-        if (string.IsNullOrEmpty(rawUrl))
-        {
-            rawUrl = "http://localhost";
-        }
-
-        if (string.IsNullOrEmpty(rawPort))
-        {
-            rawPort = isProduction ? "6000" : "5000";
-        }
-
-        var inContainer = string.Equals(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"), "true", StringComparison.OrdinalIgnoreCase);
-
-        string bindingUrl;
-        if (inContainer)
-        {
-            bindingUrl = $"http://0.0.0.0:{rawPort}";
-        }
-        else
-        {
-            rawUrl = rawUrl.TrimEnd('/');
-            if (Uri.TryCreate(rawUrl, UriKind.Absolute, out var uri))
-            {
-                bindingUrl = $"{uri.Scheme}://0.0.0.0:{rawPort}";
-            }
-            else
-            {
-                bindingUrl = $"http://0.0.0.0:{rawPort}";
-            }
-        }
+        var port = uri.Port > 0 ? uri.Port : 80;
+        string bindingUrl = $"{uri.Scheme}://0.0.0.0:{port}";
 
         builder.WebHost.UseUrls(bindingUrl);
         builder.Configuration["ASPNETCORE_URLS"] = bindingUrl;
-        builder.Configuration["ASPNETCORE_HTTP_PORTS"] = rawPort;
+        builder.Configuration["ASPNETCORE_HTTP_PORTS"] = port.ToString();
 
         Console.WriteLine($"🌐 [{serviceName.ToUpper()}] Configured to listen on {bindingUrl} (Mode: {(isProduction ? "Production" : "Development")})");
 
