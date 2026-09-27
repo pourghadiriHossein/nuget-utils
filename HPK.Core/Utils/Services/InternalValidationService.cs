@@ -79,7 +79,26 @@ public class InternalValidationService : IInternalValidationService
             }
 
             var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
-            var result = JsonSerializer.Deserialize<Dictionary<Guid, bool>>(responseBody, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            Dictionary<Guid, bool>? result = null;
+
+            try
+            {
+                var apiResponse = JsonSerializer.Deserialize<Responses.ApiResponse<Dictionary<Guid, bool>>>(responseBody, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                if (apiResponse != null && apiResponse.Data != null)
+                {
+                    result = apiResponse.Data;
+                }
+            }
+            catch (JsonException) { }
+
+            if (result == null)
+            {
+                try
+                {
+                    result = JsonSerializer.Deserialize<Dictionary<Guid, bool>>(responseBody, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                }
+                catch (JsonException) { }
+            }
 
             if (result == null) return false;
 
