@@ -216,6 +216,11 @@ public static class PlatformApiExtensions
             options.Filters.Add<HPK.Core.Filters.ApiResponseFilter>();
             options.Filters.Add(new Microsoft.AspNetCore.Mvc.ProducesAttribute("application/json"));
         })
+        .AddJsonOptions(options =>
+        {
+            // Accept both string names ("A", "CNAME") and integer values (0, 2) for enums
+            options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+        })
         .ConfigureApiBehaviorOptions(options =>
         {
             options.InvalidModelStateResponseFactory = context =>
