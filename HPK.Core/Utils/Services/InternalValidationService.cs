@@ -44,7 +44,8 @@ public class InternalValidationService : IInternalValidationService
         var ids = workspaceIds.Distinct().ToList();
         if (!ids.Any()) return true;
 
-        var baseUrl = Environment.GetEnvironmentVariable("WORKSPACE_SERVICE_URL") ?? "http://localhost:5013";
+        var baseUrl = Environment.GetEnvironmentVariable("WORKSPACE_SERVICE_URL") ?? DotNetEnv.Env.GetString("WORKSPACE_SERVICE_URL");
+        if (string.IsNullOrWhiteSpace(baseUrl)) baseUrl = "http://localhost:5013";
         var url = $"{baseUrl.TrimEnd('/')}/internal/workspaces/validate";
 
         return await ValidateIdsAsync(url, ids, cancellationToken);
@@ -55,7 +56,8 @@ public class InternalValidationService : IInternalValidationService
         var ids = accountIds.Distinct().ToList();
         if (!ids.Any()) return true;
 
-        var baseUrl = Environment.GetEnvironmentVariable("IDP_SERVICE_URL") ?? "http://localhost:5005";
+        var baseUrl = Environment.GetEnvironmentVariable("IDP_SERVICE_URL") ?? DotNetEnv.Env.GetString("IDP_SERVICE_URL");
+        if (string.IsNullOrWhiteSpace(baseUrl)) baseUrl = "http://localhost:5005";
         var url = $"{baseUrl.TrimEnd('/')}/internal/accounts/validate";
 
         return await ValidateIdsAsync(url, ids, cancellationToken);
