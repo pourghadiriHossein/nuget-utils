@@ -33,3 +33,16 @@ A critical part of `HPK.Core` is the `TenantValidationMiddleware`. It universall
    When you make changes to `HPK.Core`, you must bump the version and publish it.
 
 3. **Global Impact**: Any change made to `HPK.Core` instantly impacts ALL microservices. Always double-check nullability, dependencies, and performance before modifying core middlewares or filters.
+
+- **Standardized HTTP Status Codes**: All API controllers MUST adhere to the following network HTTP status codes:
+  - Read All (GET): `200 OK`
+  - Read One (GET): `200 OK`
+  - Create (POST): `201 Created`
+  - Full Update (PUT): `200 OK` or `204 No Content`
+  - Partial Update (PATCH): `200 OK` or `204 No Content`
+  - Delete (DELETE): `200 OK` or `204 No Content`
+  Use `StatusCode(201, ...)` for creations.
+
+- **JSON:API Query Standard**: All `index`/`list` endpoints MUST use `[FromQuery] JsonApiQueryOptions options` from `HPK.Core.JsonApi` and utilize `.ApplyJsonApiAsync(options)` in their CQRS Handlers to support standardized JSON:API querying, filtering, sorting, and pagination. 
+  - NEVER use manual parameters like `int page` or `int per_page` in controller signatures. 
+  - Pagination parameters must automatically be processed as `page[number]` and `page[size]` by `JsonApiQueryOptions`.
