@@ -13,3 +13,6 @@ This package is designed to provide **infrastructural building blocks** and cros
 ### 📦 Packages
 
 * **`HPK.Core`**: Core enums, JSON API models, standard API responses, filters, routing extensions, EF Core database extensions, global error handling, and base configuration for MassTransit/RabbitMQ.
+
+### 📝 OpenAPI & Documentation
+In .NET 9, `HPK.Core` configures the OpenAPI specification manually using a custom `IOpenApiOperationTransformer`. Because standard `.NET 9` OpenAPI generation does not automatically parse XML Comments for MVC Controllers, developers **must** use `[EndpointSummary("...")]` and `[EndpointDescription("...")]` (from the `Microsoft.AspNetCore.Http` namespace) to document Controller action methods. The custom transformer in `HPK.Core` will parse these and display them correctly in the Scalar UI.

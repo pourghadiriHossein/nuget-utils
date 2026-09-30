@@ -181,6 +181,22 @@ public static class PlatformApiExtensions
         services.AddHttpContextAccessor();
         services.AddOpenApi(options =>
         {
+            options.AddOperationTransformer((operation, context, cancellationToken) =>
+            {
+                var metadata = context.Description.ActionDescriptor.EndpointMetadata;
+                var summaryAttr = metadata.OfType<Microsoft.AspNetCore.Http.EndpointSummaryAttribute>().FirstOrDefault();
+                if (summaryAttr != null && !string.IsNullOrWhiteSpace(summaryAttr.Summary))
+                {
+                    operation.Summary = summaryAttr.Summary;
+                }
+                var descAttr = metadata.OfType<Microsoft.AspNetCore.Http.EndpointDescriptionAttribute>().FirstOrDefault();
+                if (descAttr != null && !string.IsNullOrWhiteSpace(descAttr.Description))
+                {
+                    operation.Description = descAttr.Description;
+                }
+                return Task.CompletedTask;
+            });
+
             options.AddDocumentTransformer((document, context, cancellationToken) =>
             {
                 var request = context.ApplicationServices.GetService<Microsoft.AspNetCore.Http.IHttpContextAccessor>()?.HttpContext?.Request;
