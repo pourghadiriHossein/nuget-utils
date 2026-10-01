@@ -118,8 +118,11 @@ public static class PlatformApiExtensions
 
         app.UseRouting();
 
-        // Enforce x-platform / x-workspace tenant boundaries
-        app.UseMiddleware<HPK.Core.Middlewares.TenantValidationMiddleware>();
+        // Enforce x-platform / x-workspace tenant boundaries for backend services only
+        if (cleanServiceName != "gateway")
+        {
+            app.UseMiddleware<HPK.Core.Middlewares.TenantValidationMiddleware>();
+        }
 
         if (app.Environment.IsDevelopment())
         {

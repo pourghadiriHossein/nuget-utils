@@ -20,6 +20,13 @@ public class TenantValidationMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
+        // Bypass if the API Gateway resolved this as a public endpoint (authentication = false)
+        if (context.Request.Headers["x-authentication"] == "false")
+        {
+            await _next(context);
+            return;
+        }
+
         var path = context.Request.Path.Value ?? string.Empty;
 
         // Bypass for internal APIs, swagger docs, etc.
