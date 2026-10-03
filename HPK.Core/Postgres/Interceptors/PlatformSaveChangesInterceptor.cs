@@ -71,7 +71,14 @@ public class PlatformSaveChangesInterceptor : SaveChangesInterceptor
             {
                 if (entry.State == EntityState.Added || workspaceIdProp.IsModified)
                 {
-                    workspaceIdsToValidate.Add(wId);
+                    var isAddedInCurrentTransaction = entries.Any(e => 
+                        e.State == EntityState.Added && 
+                        e.Properties.Any(p => p.Metadata.Name == "Id" && p.CurrentValue is Guid id && id == wId));
+
+                    if (!isAddedInCurrentTransaction)
+                    {
+                        workspaceIdsToValidate.Add(wId);
+                    }
                 }
             }
 
@@ -80,7 +87,14 @@ public class PlatformSaveChangesInterceptor : SaveChangesInterceptor
             {
                 if (entry.State == EntityState.Added || accountIdProp.IsModified)
                 {
-                    accountIdsToValidate.Add(aId);
+                    var isAddedInCurrentTransaction = entries.Any(e => 
+                        e.State == EntityState.Added && 
+                        e.Properties.Any(p => p.Metadata.Name == "Id" && p.CurrentValue is Guid id && id == aId));
+
+                    if (!isAddedInCurrentTransaction)
+                    {
+                        accountIdsToValidate.Add(aId);
+                    }
                 }
             }
         }
