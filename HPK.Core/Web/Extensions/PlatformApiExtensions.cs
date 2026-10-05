@@ -146,7 +146,8 @@ public static class PlatformApiExtensions
 
     public static IServiceCollection AddPlatformApiStandard(this IServiceCollection services)
     {
-        services.AddHttpClient();
+        services.AddTransient<HPK.Core.Middlewares.RequestIdDelegatingHandler>();
+        services.AddHttpClient("").AddHttpMessageHandler<HPK.Core.Middlewares.RequestIdDelegatingHandler>();
         services.AddScoped<HPK.Core.Utils.Services.IInternalValidationService, HPK.Core.Utils.Services.InternalValidationService>();
         // 1. Add Global Exception Handler
         services.AddExceptionHandler<HPK.Core.Middlewares.GlobalExceptionHandler>();
@@ -182,6 +183,8 @@ public static class PlatformApiExtensions
         });
         
         services.AddHttpContextAccessor();
+        // 3. Register global MediatR behavior for logging
+        services.AddTransient(typeof(MediatR.IPipelineBehavior<,>), typeof(HPK.Core.Behaviors.LogAddBehavior<,>));
         services.AddOpenApi(options =>
         {
             options.AddOperationTransformer((operation, context, cancellationToken) =>
