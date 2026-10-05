@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using MassTransit;
@@ -38,6 +39,14 @@ public class LogAddBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, T
                 return null;
             }
 
+            // Capture request and response for Meta
+            var metaData = new Dictionary<string, object>();
+            metaData["request"] = request;
+            if (response != null)
+            {
+                metaData["response"] = response;
+            }
+
             var logEvent = new LogAddEvent
             {
                 Event = "log:add",
@@ -53,7 +62,7 @@ public class LogAddBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, T
                     Table = loggable.LogTable,
                     Model = loggable.LogModel,
                     Type = loggable.LogType.ToLowerString(),
-                    Meta = null // Can be populated if needed
+                    Meta = metaData
                 }
             };
 
