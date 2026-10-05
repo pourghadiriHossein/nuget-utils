@@ -58,9 +58,9 @@ public class LogAddBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, T
                     WorkspaceId = GetHeaderGuid("x-workspace"),
                     AccountId = GetHeaderGuid("x-account"),
                     TraceId = GetHeaderGuid("x-trace-id"),
-                    Service = loggable.LogService.ToString(),
+                    Service = loggable.LogService.ToLowerString(),
                     Table = loggable.LogTable,
-                    Model = loggable.LogModel,
+                    Model = loggable.LogModel.ToLowerInvariant(),
                     Type = loggable.LogType.ToLowerString(),
                     Meta = metaData
                 }
