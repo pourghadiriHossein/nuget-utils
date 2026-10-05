@@ -118,6 +118,24 @@ public static class JsonApiExtensions
             }
         }
 
+
+        // Fallback sorting if none provided (required by EF Core for Skip/Take)
+        bool hasSort = !string.IsNullOrWhiteSpace(options.Sort);
+        if (!hasSort && !query.Expression.ToString().Contains("OrderBy"))
+        {
+            var createdAtProp = typeof(T).GetProperty("CreatedAt", System.Reflection.BindingFlags.IgnoreCase | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+            var idProp = typeof(T).GetProperty("Id", System.Reflection.BindingFlags.IgnoreCase | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+            
+            if (createdAtProp != null) 
+            {
+                query = query.OrderBy("CreatedAt descending");
+            }
+            else if (idProp != null) 
+            {
+                query = query.OrderBy("Id descending");
+            }
+        }
+
         // 4. Pagination
         var totalCount = await query.CountAsync();
         var pageNumber = options.GetPageNumber();
