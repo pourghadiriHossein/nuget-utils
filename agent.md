@@ -46,3 +46,6 @@ A critical part of `HPK.Core` is the `TenantValidationMiddleware`. It universall
 - **JSON:API Query Standard**: All `index`/`list` endpoints MUST use `[FromQuery] JsonApiQueryOptions options` from `HPK.Core.JsonApi` and utilize `.ApplyJsonApiAsync(options)` in their CQRS Handlers to support standardized JSON:API querying, filtering, sorting, and pagination. 
   - NEVER use manual parameters like `int page` or `int per_page` in controller signatures. 
   - Pagination parameters must automatically be processed as `page[number]` and `page[size]` by `JsonApiQueryOptions`.
+
+### Mandatory Logging
+- Every MediatR Command or Query must implement `HPK.Core.Interfaces.ILoggableRequest` to auto-publish `log:add` to RabbitMQ. Specify `LogService`, `LogTable`, `LogModel`, and `LogType` (`command` or `query`).

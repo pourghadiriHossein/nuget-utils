@@ -52,7 +52,7 @@ public class LogAddBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, T
                     Service = loggable.LogService.ToString(),
                     Table = loggable.LogTable,
                     Model = loggable.LogModel,
-                    Type = loggable.LogType,
+                    Type = loggable.LogType.ToLowerString(),
                     Meta = null // Can be populated if needed
                 }
             };

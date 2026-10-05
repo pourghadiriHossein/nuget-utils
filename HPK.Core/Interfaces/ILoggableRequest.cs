@@ -8,5 +8,5 @@ public interface ILoggableRequest
     PlatformService LogService { get; }
     string LogTable { get; }
     string LogModel { get; }
-    string LogType { get; } // "command" or "query"
+    LogType LogType { get; } // "command" or "query"
 }
