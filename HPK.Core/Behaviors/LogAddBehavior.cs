@@ -13,12 +13,12 @@ namespace HPK.Core.Behaviors;
 
 public class LogAddBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse> where TRequest : notnull
 {
-    private readonly IPublishEndpoint _publishEndpoint;
+    private readonly ISendEndpointProvider _sendEndpointProvider;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public LogAddBehavior(IPublishEndpoint publishEndpoint, IHttpContextAccessor httpContextAccessor)
+    public LogAddBehavior(ISendEndpointProvider sendEndpointProvider, IHttpContextAccessor httpContextAccessor)
     {
-        _publishEndpoint = publishEndpoint;
+        _sendEndpointProvider = sendEndpointProvider;
         _httpContextAccessor = httpContextAccessor;
     }
 
@@ -66,7 +66,9 @@ public class LogAddBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, T
                 }
             };
 
-            await _publishEndpoint.Publish(logEvent, cancellationToken);
+            var queueName = Environment.GetEnvironmentVariable("ACTION_SERVICE_QUEUE") ?? "icot_action_queue";
+            var sendEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri($"queue:{queueName}"));
+            await sendEndpoint.Send(logEvent, cancellationToken);
         }
 
         return response;
