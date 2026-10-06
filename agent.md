@@ -30,7 +30,7 @@ A critical part of `HPK.Core` is the `TenantValidationMiddleware`. It universall
    **CRITICAL**: NEVER change this to a hardcoded version (e.g., `1.0.8`) in the microservice `.csproj` files.
 
 2. **Publishing Updates**:
-   When you make changes to `HPK.Core`, you must bump the version and publish it.
+   When you make changes to `HPK.Core`, the package version goes up automatically. Do NOT manually change `<Version>` in `HPK.Core.csproj`.
 
 3. **Global Impact**: Any change made to `HPK.Core` instantly impacts ALL microservices. Always double-check nullability, dependencies, and performance before modifying core middlewares or filters.
 

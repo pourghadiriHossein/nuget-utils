@@ -1,3 +1,4 @@
+using System.Linq;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -32,6 +33,12 @@ public class LogAddBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, T
         {
             var httpContext = _httpContextAccessor.HttpContext;
             
+            // Seed Logging Exemption: If there is no HTTP Context (e.g. running via CLI or Startup Seeding), DO NOT generate action logs
+            if (httpContext == null)
+            {
+                return response;
+            }
+            
             Guid? GetHeaderGuid(string headerName)
             {
                 if (httpContext?.Request.Headers.TryGetValue(headerName, out var val) == true && Guid.TryParse(val.ToString(), out var guid))
@@ -44,7 +51,18 @@ public class LogAddBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, T
             metaData["request"] = request;
             if (response != null)
             {
-                metaData["response"] = response;
+                
+                var responseType = response.GetType();
+                if (!responseType.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IQueryable<>)) && 
+                    !typeof(System.IO.Stream).IsAssignableFrom(responseType))
+                {
+                    metaData["response"] = response;
+                }
+                else
+                {
+                    metaData["response"] = "[Unserializable Response Type]";
+                }
+
             }
 
             var logEvent = new LogAddEvent
