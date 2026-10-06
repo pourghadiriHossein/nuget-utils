@@ -146,7 +146,7 @@ public static class JsonApiExtensions
             .Take(pageSize)
             .ToListAsync();
 
-        return new PagedResult<T>(pagedData, totalCount);
+        return new PagedResult<T>(pagedData, totalCount, pageNumber, pageSize);
     }
 
     private static string ToPascalCase(string input)

@@ -48,8 +48,24 @@ public class ApiResponseFilter : IAsyncResultFilter
                     if (countProp != null && dataProp != null)
                     {
                         var totalCount = countProp.GetValue(objectResult.Value);
+                        var currentPageProp = valueType.GetProperty("CurrentPage");
+                        var lastPageProp = valueType.GetProperty("LastPage");
+                        var perPageProp = valueType.GetProperty("PerPage");
+                        
+                        object? currentPage = currentPageProp?.GetValue(objectResult.Value);
+                        object? lastPage = lastPageProp?.GetValue(objectResult.Value);
+                        object? perPage = perPageProp?.GetValue(objectResult.Value);
+
                         payloadData = dataProp.GetValue(objectResult.Value);
-                        metaData = new { totalCount };
+                        
+                        if (currentPage != null) 
+                        {
+                            metaData = new { totalCount, currentPage, lastPage, perPage };
+                        }
+                        else 
+                        {
+                            metaData = new { totalCount };
+                        }
                     }
                 }
             }

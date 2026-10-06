@@ -26,5 +26,5 @@ public class JsonApiQueryOptions
 
     public int GetPageNumber() => Page.TryGetValue("number", out var num) && num > 0 ? num : 1;
     
-    public int GetPageSize() => Page.TryGetValue("size", out var size) && size > 0 ? size : 15;
+    public int GetPageSize() => Page.TryGetValue("size", out var size) && size > 0 ? size : 10;
 }
